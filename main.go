@@ -1,6 +1,8 @@
 package main
 
-import "Banking-Auth/app"
+import (
+	"github.com/WilkerAlves/banking-auth/app"
+)
 
 func main() {
 
