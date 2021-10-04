@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"github.com/WilkerAlves/banking-auth/dto"
 	"github.com/WilkerAlves/banking-auth/service"
-	"log"
+	"github.com/WilkerAlves/banking-lib/logger"
 	"net/http"
 )
 
@@ -19,12 +19,12 @@ func (h AuthHandler) NotImplementedHandler(w http.ResponseWriter, r *http.Reques
 func (h AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	var loginRequest dto.LoginRequest
 	if err := json.NewDecoder(r.Body).Decode(&loginRequest); err != nil {
-		log.Println("Error while decoding login request: " + err.Error())
+		logger.Error("Error while decoding login request: " + err.Error())
 		w.WriteHeader(http.StatusBadRequest)
 	} else {
-		token, err := h.service.Login(loginRequest)
-		if err != nil {
-			writeResponse(w, http.StatusUnauthorized, err.Error())
+		token, appErr := h.service.Login(loginRequest)
+		if appErr != nil {
+			writeResponse(w, appErr.Code, appErr.Message)
 		} else {
 			writeResponse(w, http.StatusOK, *token)
 		}
@@ -40,23 +40,22 @@ func (h AuthHandler) Verify(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if urlParams["token"] != "" {
-		isAuthorized, appError := h.service.Verify(urlParams)
-		if appError != nil {
-			writeResponse(w, http.StatusForbidden, notAuthorizedResponse())
+		appErr := h.service.Verify(urlParams)
+		if appErr != nil {
+			writeResponse(w, appErr.Code, notAuthorizedResponse(appErr.Message))
 		} else {
-			if isAuthorized {
-				writeResponse(w, http.StatusOK, authorizedResponse())
-			} else {
-				writeResponse(w, http.StatusForbidden, notAuthorizedResponse())
-			}
+			writeResponse(w, http.StatusOK, authorizedResponse())
 		}
 	} else {
-		writeResponse(w, http.StatusForbidden, "missing token")
+		writeResponse(w, http.StatusForbidden, notAuthorizedResponse("missing token"))
 	}
 }
 
-func notAuthorizedResponse() map[string]bool {
-	return map[string]bool{"isAuthorized": false}
+func notAuthorizedResponse(msg string) map[string]interface{} {
+	return map[string]interface{}{
+		"isAuthorized": false,
+		"message":      msg,
+	}
 }
 
 func authorizedResponse() map[string]bool {
