@@ -43,13 +43,6 @@ func (s DefaultAuthService) Verify(urlParams map[string]string) *errs.AppError {
 		if jwtToken.Valid {
 			// type cast the token claims to jwt.MapClaims
 			claims := jwtToken.Claims.(*domain.Claims)
-			// converting the token claims to Claims struct
-			//if claims, err := domain.BuildClaimsFromJwtMapClaims(mapClaims); err != nil {
-			//	return errs.NewAuthorizationError(err.Error())
-			//} else {
-			/* if Role if user then check if the account_id and customer_id
-			   coming in the URL belongs to the same token
-			*/
 			if claims.IsUserRole() {
 				if !claims.IsRequestVerifiedWithTokenClaims(urlParams) {
 					return errs.NewAuthorizationError("request not verified with the token claims")
@@ -72,9 +65,7 @@ func jwtTokenFromString(tokenString string) (*jwt.Token, error) {
 	token, err := jwt.ParseWithClaims(tokenString, &domain.Claims{}, func(token *jwt.Token) (interface{}, error) {
 		return []byte(domain.HmacSampleSecret), nil
 	})
-	//token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-	//	return []byte(domain.HmacSampleSecret), nil
-	//})
+
 	if err != nil {
 		log.Println("Error while parsing token: " + err.Error())
 		return nil, err
